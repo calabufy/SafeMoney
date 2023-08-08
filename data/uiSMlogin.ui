@@ -22,37 +22,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="5" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QPushButton" name="login_button">
-        <property name="text">
-         <string>Log in</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="back_button">
-        <property name="text">
-         <string>Back to register</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="6" column="0">
-     <widget class="QLabel" name="author_label">
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>Anton Schcukin - 2023</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLineEdit" name="login">
+     <widget class="QLineEdit" name="password">
       <property name="font">
        <font>
         <pointsize>10</pointsize>
@@ -61,14 +31,11 @@
      </widget>
     </item>
     <item row="3" column="0">
-     <widget class="QLabel" name="label_3">
+     <widget class="QLineEdit" name="login">
       <property name="font">
        <font>
         <pointsize>10</pointsize>
        </font>
-      </property>
-      <property name="text">
-       <string>Password:</string>
       </property>
      </widget>
     </item>
@@ -93,6 +60,49 @@
       </property>
      </widget>
     </item>
+    <item row="8" column="0">
+     <widget class="QLabel" name="author_label">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Anton Schcukin - 2023</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="login_button">
+        <property name="text">
+         <string>Log in</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="back_button">
+        <property name="text">
+         <string>Back to register</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="6" column="0">
+     <widget class="QLabel" name="status_label">
+      <property name="styleSheet">
+       <string notr="true">status_label : { color : red; }</string>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="0">
      <widget class="QLabel" name="label_2">
       <property name="font">
@@ -106,11 +116,14 @@
      </widget>
     </item>
     <item row="4" column="0">
-     <widget class="QLineEdit" name="password">
+     <widget class="QLabel" name="label_3">
       <property name="font">
        <font>
         <pointsize>10</pointsize>
        </font>
+      </property>
+      <property name="text">
+       <string>Password:</string>
       </property>
      </widget>
     </item>
