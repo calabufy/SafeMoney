@@ -2,10 +2,10 @@ import sqlite3
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QLineEdit
 
-from SafeMoney.data.uiSM import Ui_SafeMoney
-from SafeMoney.data.uiSMsignup import Ui_SafeMoneySignup
-from SafeMoney.data.uiSMreg import Ui_SafeMoneyreg
-from SafeMoney.data.uiSMlogin import Ui_SafeMoneyLogin
+from data.uiSM import Ui_SafeMoney
+from data.uiSMsignup import Ui_SafeMoneySignup
+from data.uiSMreg import Ui_SafeMoneyreg
+from data.uiSMlogin import Ui_SafeMoneyLogin
 
 
 class SafeMoneyApp(QMainWindow):
@@ -41,6 +41,9 @@ class SafeMoneyApp(QMainWindow):
         self.signup_form.repeatpassword.returnPressed.connect(self.changeCursor)
         self.signup_form.balance.returnPressed.connect(self.changeCursor)
 
+        self.login_form.login.returnPressed.connect(self.changeCursor)
+        self.login_form.password.returnPressed.connect(self.changeCursor)
+
         self.setCentralWidget(self.stack)
         self.setWindowTitle(self.reg_form.windowTitle())
 
@@ -53,13 +56,45 @@ class SafeMoneyApp(QMainWindow):
         self.setWindowTitle(form.windowTitle())
 
     def changeCursor(self):
-        lineEdits = self.signup_form.findChildren(QLineEdit)
+        lineEdits = self.signup_form.findChildren(QLineEdit) if self.signup_form.isVisible() \
+            else self.login_form.findChildren(QLineEdit)
         current_line_edit = self.sender()
         current_index = lineEdits.index(current_line_edit)
         if (current_index + 1) != len(lineEdits):
             lineEdits[current_index + 1].setFocus()
         else:
-            self.signUpUser()
+            if self.signup_form.isVisible():
+                self.signUpUser()
+            else:
+                self.loginUser()
+
+    def loginUser(self):
+        login = self.login_form.login.text()
+        password = self.login_form.password.text()
+
+        if not login:
+            self.login_form.status_label.setText("Error : Enter your login")
+            self.login_form.login.setFocus()
+            return
+        if not password:
+            self.login_form.status_label.setText("Error : Enter your password")
+            self.login_form.password.setFocus()
+            return
+
+        conn = sqlite3.connect('moneyBase.db')
+        cursor = conn.cursor()
+        userData = cursor.execute('SELECT * FROM users WHERE login = ?', (login,)).fetchone()
+        print(userData)
+        if userData is None:
+            self.login_form.status_label.setText("Error : There is no user with this login")
+            self.login_form.login.setFocus()
+            return
+        if password != userData[3]:
+            self.login_form.status_label.setText("Error : Incorrect password")
+            self.login_form.password.setFocus()
+            return
+        conn.close()
+        self.showNewForm(self.main_form, sizes[self.main_form][0], sizes[self.main_form][1])
 
     def signUpUser(self):
         name = self.signup_form.name.text()
