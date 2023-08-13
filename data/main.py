@@ -1,6 +1,6 @@
 import sqlite3
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QIntValidator, QPainter, QPen
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QLineEdit, QFrame
 from PyQt5 import QtCore
@@ -27,7 +27,8 @@ class SafeMoneyApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.sizes = {}
-        self.period = None
+        self.period = "Today"
+        self.userid = None
         self.stack = QStackedWidget(self)
         self.reg_form = Ui_SafeMoneyreg()
         self.login_form = Ui_SafeMoneyLogin()
@@ -65,9 +66,25 @@ class SafeMoneyApp(QMainWindow):
         self.login_form.login.returnPressed.connect(self.changeCursor)
         self.login_form.password.returnPressed.connect(self.changeCursor)
 
-        self.main_form.expense_lineEdit.setValidator(QIntValidator())
-        self.main_form.income_lineEdit.setValidator(QIntValidator())
+        self.main_form.money_lineEdit.setValidator(QIntValidator())
         self.main_form.changeuser_button.clicked.connect(lambda: self.showNewForm(self.reg_form, self.sizes[self.reg_form][0],self.sizes[self.reg_form][1]))
+
+        self.main_form.operation_box.addItem('expense (-)')
+        self.main_form.operation_box.addItem('income (+)')
+
+        self.main_form.typeBox.addItem('health (✚)')
+        self.main_form.typeBox.addItem('free time (⚽)')
+        self.main_form.typeBox.addItem('home (☗)')
+        self.main_form.typeBox.addItem('cafe (☕)')
+        self.main_form.typeBox.addItem('education (√)')
+        self.main_form.typeBox.addItem('gifts (🎁)')
+        self.main_form.typeBox.addItem('products (🍲)')
+        self.main_form.typeBox.addItem('No type')
+
+        self.main_form.submit_button.clicked.connect(self.pushMoney)
+
+        current_date = QDate.currentDate()
+        self.main_form.dateEdit.setDate(current_date)
 
         self.setCentralWidget(self.stack)
         self.setWindowTitle(self.reg_form.windowTitle())
@@ -117,17 +134,17 @@ class SafeMoneyApp(QMainWindow):
             self.login_form.status_label.setText("Error : Incorrect password")
             self.login_form.password.setFocus()
             return
-        userid = cursor.execute('SELECT id FROM users WHERE login = ?', (login,)).fetchone()[0]
+        self.userid = cursor.execute('SELECT id FROM users WHERE login = ?', (login,)).fetchone()[0]
         conn.close()
         self.showNewForm(self.main_form, self.sizes[self.main_form][0], self.sizes[self.main_form][1])
-        self.initMainWindow(userid)
+        self.initMainWindow()
 
     def signUpUser(self):
         name = self.signup_form.name.text()
         login = self.signup_form.login.text()
         password = self.signup_form.password.text()
         repeatpassword = self.signup_form.repeatpassword.text()
-        balance = self.signup_form.balance.text()
+        self.balance = self.signup_form.balance.text()
         conn = sqlite3.connect('moneyBase.db')
         cursor = conn.cursor()
         if not name:
@@ -146,7 +163,7 @@ class SafeMoneyApp(QMainWindow):
             self.signup_form.status_label.setText("Error : Repeat your password")
             self.signup_form.repeatpassword.setFocus()
             return
-        elif not balance:
+        elif not self.balance:
             self.signup_form.status_label.setText("Error : Enter your current balance")
             self.signup_form.balance.setFocus()
             return
@@ -156,7 +173,7 @@ class SafeMoneyApp(QMainWindow):
             return
 
         try:
-            float(balance)
+            float(self.balance)
         except:
             self.signup_form.status_label.setText("Error : Balance must be a number")
             self.signup_form.balance.setFocus()
@@ -170,25 +187,56 @@ class SafeMoneyApp(QMainWindow):
 
         self.signup_form.status_label.setText("Success!")
         cursor.execute('INSERT INTO users (name, login, password, balance) VALUES (?, ?, ?, ?)',
-                           (name, login, password, balance))
-        userid = cursor.execute('SELECT id FROM users WHERE login = ?', (login,)).fetchone()[0]
+                           (name, login, password, self.balance))
+        self.userid = cursor.execute('SELECT id FROM users WHERE login = ?', (login,)).fetchone()[0]
         conn.commit()
         conn.close()
         self.showNewForm(self.main_form, self.sizes[self.main_form][0], self.sizes[self.main_form][1])
-        self.initMainWindow(userid)
+        self.initMainWindow()
 
     def drawDiagram(self):
         self.main_form.frame.repaint()
         self.update()
 
-    def initMainWindow(self, userid):
+    def initMainWindow(self):
         conn = sqlite3.connect('moneyBase.db')
         cursor = conn.cursor()
-        name, balance = cursor.execute('SELECT name, balance FROM users WHERE id = ?', (userid,)).fetchone()
+        name, self.balance = cursor.execute('SELECT name, balance FROM users WHERE id = ?', (self.userid,)).fetchone()
         self.main_form.username_label.setText(name)
-        self.main_form.total_label.setText(str(balance) + ' RUB')
+        self.main_form.total_label.setText(str(self.balance) + ' RUB')
         self.drawDiagram()
+        current_date = QDate.currentDate()
+        self.main_form.dateEdit.setDate(current_date)
         conn.close()
+
+    def pushMoney(self):
+        if self.main_form.money_lineEdit.text() == '0':
+            self.main_form.error_label.setText('Error : Enter the number of money')
+            self.main_form.money_lineEdit.setFocus()
+            return
+        conn = sqlite3.connect('moneyBase.db')
+        cursor = conn.cursor()
+
+        money = int(self.main_form.money_lineEdit.text())
+        operation = self.main_form.operation_box.currentText()[:-4]
+        type = self.main_form.typeBox.currentText()[:-4]
+        comment = self.main_form.comment_textEdit.toPlainText()
+        if not comment:
+            comment = '[No comment]'
+        date = self.main_form.dateEdit.date().toString("yyyy-MM-dd")
+        print(money, operation, type, comment, date)
+        cursor.execute('INSERT INTO operations (userid, money, operation, type, comment, date) VALUES '
+                       '(?, ?, ?, ?, ?, ?)', (self.userid, money, operation, type, comment, date))
+        self.balance = self.balance + (money * (-1, 1)[int(operation == "income")])
+        cursor.execute('UPDATE users SET balance = ? WHERE id = ?', (self.balance, self.userid))
+        conn.commit()
+        conn.close()
+        self.initMainWindow()
+        self.main_form.tabWidget.setCurrentIndex(0)
+
+
+    def fillTable(self):
+        pass
 
 
 if __name__ == "__main__":

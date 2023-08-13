@@ -21,6 +21,27 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+<<<<<<< HEAD
+=======
+    <item row="5" column="0">
+     <widget class="QLineEdit" name="password">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLineEdit" name="login">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+     </widget>
+    </item>
+>>>>>>> 21d40e50593acc50545ea4d75bbf55d2b13d99c5
     <item row="0" column="0">
      <widget class="QLabel" name="programname_label">
       <property name="minimumSize">
@@ -39,6 +60,49 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0">
+     <widget class="QLabel" name="author_label">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Anton Schcukin - 2023</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="login_button">
+        <property name="text">
+         <string>Log in</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="back_button">
+        <property name="text">
+         <string>Back to register</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="6" column="0">
+     <widget class="QLabel" name="status_label">
+      <property name="styleSheet">
+       <string notr="true">status_label : { color : red; }</string>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="text">
+       <string>TextLabel</string>
       </property>
      </widget>
     </item>
@@ -79,12 +143,13 @@
      </widget>
     </item>
     <item row="4" column="0">
-     <widget class="QLineEdit" name="password">
+     <widget class="QLabel" name="label_3">
       <property name="font">
        <font>
         <pointsize>10</pointsize>
        </font>
       </property>
+<<<<<<< HEAD
       <property name="inputMethodHints">
        <set>Qt::ImhHiddenText</set>
       </property>
@@ -133,6 +198,10 @@
       </property>
       <property name="text">
        <string>Anton Schcukin - 2023</string>
+=======
+      <property name="text">
+       <string>Password:</string>
+>>>>>>> 21d40e50593acc50545ea4d75bbf55d2b13d99c5
       </property>
      </widget>
     </item>
