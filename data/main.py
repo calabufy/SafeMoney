@@ -250,7 +250,7 @@ class SafeMoneyApp(QMainWindow):
         cursor = conn.cursor()
         if self.period == 'Today':
             data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
-                              'WHERE userid = ? AND date = ? ORDER BY date DESC',
+                                  'WHERE userid = ? AND date = ? ORDER BY date DESC',
                                   (self.userid, QDate.currentDate().toString("yyyy-MM-dd"))).fetchall()
         elif self.period == "Month":
             data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
@@ -266,8 +266,10 @@ class SafeMoneyApp(QMainWindow):
                                   'WHERE userid = ? ORDER BY date DESC',
                                   (self.userid,)).fetchall()
         formatData = []
+        dif = 0
         for op in data:
             formatData.append((('-', '+')[op[1] == 'income'] + str(op[0]), op[2][-2:-1], op[3], op[4]))
+            dif += op[0] * (-1, 1)[op[1] == 'income']
 
         self.main_form.balance_table.setRowCount(0)
 
@@ -277,6 +279,11 @@ class SafeMoneyApp(QMainWindow):
                 self.main_form.balance_table.setItem(row_num, col_num, QTableWidgetItem(str(cell_data)))
                 self.main_form.balance_table.resizeColumnToContents(col_num)
 
+        self.main_form.dif_label.setText(('', '+')[dif >= 0] + str(dif) + ' RUB')
+        if dif >= 0:
+            self.main_form.dif_label.setStyleSheet("color: green;")
+        else:
+            self.main_form.dif_label.setStyleSheet("color: red;")
         conn.close()
 
 

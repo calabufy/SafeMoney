@@ -127,7 +127,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_7">
+       <widget class="QLabel" name="dif_label">
         <property name="font">
          <font>
           <pointsize>12</pointsize>
