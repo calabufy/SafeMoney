@@ -1,7 +1,7 @@
 import sqlite3
 
-from PyQt5.QtCore import Qt, QDate
-from PyQt5.QtGui import QIntValidator, QPainter, QPen, QBrush, QColor
+from PyQt5.QtCore import QDate
+from PyQt5.QtGui import QIntValidator, QPainter, QBrush, QColor
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QLineEdit, QFrame, QTableWidgetItem
 from PyQt5 import QtCore
 
@@ -11,12 +11,12 @@ from uiSMreg import Ui_SafeMoneyreg
 from uiSMlogin import Ui_SafeMoneyLogin
 
 
-class frame(QFrame):
+class DiagramFrame(QFrame):
     def set_data(self, data):
         self.data = data
         self.expense = {}
         self.colors = {'health (✚)' : 'red', 'free time (⚽)' : 'blue', 'home (☗)': 'brown', 'cafe (☕)': 'cyan',
-                       'education (√)': 'green', 'gifts (🎁)': 'yellow', 'products (🍲)': 'magenta', 'no type (⊘)' : 'gray'}
+                       'education (√)': 'green', 'gifts (🎁)': 'yellow', 'products (🍲)': 'magenta', 'no type (🛇)' : 'gray'}
         for op in self.data:
             if op[1] == 'expense':
                 if op[2] not in self.expense.keys():
@@ -28,14 +28,24 @@ class frame(QFrame):
 
     def paintEvent(self, event):
         painter = QPainter()
+        painter.begin(self)
         start_angle = 0
+        text = ''
         for type in self.expense.keys():
             money = self.expense[type]
-            angle = int(money / self.total * 360)
+            angle = round(money / self.total * 360)
             painter.setBrush(QBrush(QColor(self.colors[type])))
             painter.drawPie(self.rect(), start_angle * 16, angle * 16)
             start_angle += angle
-        self.update()
+            text += f"{type}: {money} ({self.colors[type]})\n"
+        if not self.expense.keys():
+            painter.setBrush(QBrush(QColor('lightGray')))
+            radius = self.rect().width() / 2 - 1
+            painter.drawEllipse(self.rect().center(), radius, radius)
+            text = "No expenses during this period"
+        painter.end()
+        self.setToolTip(text)
+        # self.update()
 
 
 class SafeMoneyApp(QMainWindow):
@@ -50,10 +60,10 @@ class SafeMoneyApp(QMainWindow):
         self.signup_form = Ui_SafeMoneySignup()
         self.main_form = Ui_SafeMoney()
 
-        self.main_form.frame = frame(self.main_form.Main)
-        self.main_form.frame.setGeometry(QtCore.QRect(9, 60, 318, 200))
-        self.main_form.frame.setMinimumSize(QtCore.QSize(0, 0))
-        self.main_form.frame.setObjectName("frame")
+        self.main_form.DiagramFrame = DiagramFrame(self.main_form.Main)
+        self.main_form.DiagramFrame.setGeometry(QtCore.QRect(61, 71, 210, 210))
+        self.main_form.DiagramFrame.setMinimumSize(QtCore.QSize(0, 0))
+        self.main_form.DiagramFrame.setObjectName("DiagramFrame")
 
         self.sizes[self.reg_form] = (self.reg_form.width(), self.reg_form.height())
         self.sizes[self.login_form] = (self.login_form.width(), self.login_form.height())
@@ -99,7 +109,7 @@ class SafeMoneyApp(QMainWindow):
         self.main_form.typeBox.addItem('education (√)')
         self.main_form.typeBox.addItem('gifts (🎁)')
         self.main_form.typeBox.addItem('products (🍲)')
-        self.main_form.typeBox.addItem('no type (⊘)')
+        self.main_form.typeBox.addItem('no type (🛇)')
 
         self.main_form.submit_button.clicked.connect(self.pushMoney)
 
@@ -218,8 +228,8 @@ class SafeMoneyApp(QMainWindow):
 
     def drawDiagram(self):
         dif = self.getMoney()
-        self.main_form.frame.set_data(dif)
-        # self.update()
+        self.main_form.DiagramFrame.set_data(dif)
+        self.update()
 
     def initMainWindow(self):
         conn = sqlite3.connect('moneyBase.db')
