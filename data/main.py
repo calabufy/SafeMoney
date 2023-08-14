@@ -1,7 +1,7 @@
 import sqlite3
 
 from PyQt5.QtCore import Qt, QDate
-from PyQt5.QtGui import QIntValidator, QPainter, QPen
+from PyQt5.QtGui import QIntValidator, QPainter, QPen, QBrush, QColor
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QLineEdit, QFrame, QTableWidgetItem
 from PyQt5 import QtCore
 
@@ -12,15 +12,30 @@ from uiSMlogin import Ui_SafeMoneyLogin
 
 
 class frame(QFrame):
-    def paintEvent(self, event):
-        painter = QPainter(self)
+    def set_data(self, data):
+        self.data = data
+        self.expense = {}
+        self.colors = {'health (✚)' : 'red', 'free time (⚽)' : 'blue', 'home (☗)': 'brown', 'cafe (☕)': 'cyan',
+                       'education (√)': 'green', 'gifts (🎁)': 'yellow', 'products (🍲)': 'magenta', 'no type (⊘)' : 'gray'}
+        for op in self.data:
+            if op[1] == 'expense':
+                if op[2] not in self.expense.keys():
+                    self.expense[op[2]] = op[0]
+                else:
+                    self.expense[op[2]] += op[0]
+        self.total = sum(self.expense.values())
+        self.repaint()
 
-        painter.setPen(QPen(Qt.green, 15))
-        center_x = self.width() // 2
-        center_y = self.height() // 2
-        radius = min(center_x, center_y) - 20
-        painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
-        painter.end()
+    def paintEvent(self, event):
+        painter = QPainter()
+        start_angle = 0
+        for type in self.expense.keys():
+            money = self.expense[type]
+            angle = int(money / self.total * 360)
+            painter.setBrush(QBrush(QColor(self.colors[type])))
+            painter.drawPie(self.rect(), start_angle * 16, angle * 16)
+            start_angle += angle
+        self.update()
 
 
 class SafeMoneyApp(QMainWindow):
@@ -84,7 +99,7 @@ class SafeMoneyApp(QMainWindow):
         self.main_form.typeBox.addItem('education (√)')
         self.main_form.typeBox.addItem('gifts (🎁)')
         self.main_form.typeBox.addItem('products (🍲)')
-        self.main_form.typeBox.addItem('No type (⊘)')
+        self.main_form.typeBox.addItem('no type (⊘)')
 
         self.main_form.submit_button.clicked.connect(self.pushMoney)
 
@@ -202,8 +217,9 @@ class SafeMoneyApp(QMainWindow):
         self.initMainWindow()
 
     def drawDiagram(self):
-        self.main_form.frame.repaint()
-        self.update()
+        dif = self.getMoney()
+        self.main_form.frame.set_data(dif)
+        # self.update()
 
     def initMainWindow(self):
         conn = sqlite3.connect('moneyBase.db')
@@ -244,27 +260,12 @@ class SafeMoneyApp(QMainWindow):
     def changePeriod(self):
         self.period = self.sender().text()
         self.fillTable()
+        self.drawDiagram()
 
     def fillTable(self):
         conn = sqlite3.connect('moneyBase.db')
         cursor = conn.cursor()
-        if self.period == 'Today':
-            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
-                                  'WHERE userid = ? AND date = ? ORDER BY date DESC',
-                                  (self.userid, QDate.currentDate().toString("yyyy-MM-dd"))).fetchall()
-        elif self.period == "Month":
-            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
-                                  'WHERE userid = ? AND strftime("%m", date) = ? AND strftime("%Y", date) = ? '
-                                  'ORDER BY date DESC',
-                                  (self.userid, str(QDate.currentDate().month()).zfill(2), str(QDate.currentDate().year()))).fetchall()
-        elif self.period == "Year":
-            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
-                                  'WHERE userid = ? AND strftime("%Y", date) = ? ORDER BY date DESC',
-                                  (self.userid, str(QDate.currentDate().year()))).fetchall()
-        else:
-            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
-                                  'WHERE userid = ? ORDER BY date DESC',
-                                  (self.userid,)).fetchall()
+        data = self.getMoney()
         formatData = []
         dif = 0
         for op in data:
@@ -285,6 +286,30 @@ class SafeMoneyApp(QMainWindow):
         else:
             self.main_form.dif_label.setStyleSheet("color: red;")
         conn.close()
+
+    def getMoney(self):
+        conn = sqlite3.connect('moneyBase.db')
+        cursor = conn.cursor()
+
+        if self.period == 'Today':
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? AND date = ? ORDER BY date DESC',
+                                  (self.userid, QDate.currentDate().toString("yyyy-MM-dd"))).fetchall()
+        elif self.period == "Month":
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? AND strftime("%m", date) = ? AND strftime("%Y", date) = ? '
+                                  'ORDER BY date DESC',
+                                  (self.userid, str(QDate.currentDate().month()).zfill(2), str(QDate.currentDate().year()))).fetchall()
+        elif self.period == "Year":
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? AND strftime("%Y", date) = ? ORDER BY date DESC',
+                                  (self.userid, str(QDate.currentDate().year()))).fetchall()
+        else:
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? ORDER BY date DESC',
+                                  (self.userid,)).fetchall()
+
+        return data
 
 
 if __name__ == "__main__":
