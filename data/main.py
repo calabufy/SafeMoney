@@ -2,7 +2,7 @@ import sqlite3
 
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QIntValidator, QPainter, QPen
-from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QLineEdit, QFrame
+from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedWidget, QLineEdit, QFrame, QTableWidgetItem
 from PyQt5 import QtCore
 
 from uiSM import Ui_SafeMoney
@@ -69,6 +69,11 @@ class SafeMoneyApp(QMainWindow):
         self.main_form.money_lineEdit.setValidator(QIntValidator())
         self.main_form.changeuser_button.clicked.connect(lambda: self.showNewForm(self.reg_form, self.sizes[self.reg_form][0],self.sizes[self.reg_form][1]))
 
+        self.main_form.today_button.clicked.connect(self.changePeriod)
+        self.main_form.month_button.clicked.connect(self.changePeriod)
+        self.main_form.year_button.clicked.connect(self.changePeriod)
+        self.main_form.alltime_button.clicked.connect(self.changePeriod)
+
         self.main_form.operation_box.addItem('expense (-)')
         self.main_form.operation_box.addItem('income (+)')
 
@@ -79,9 +84,11 @@ class SafeMoneyApp(QMainWindow):
         self.main_form.typeBox.addItem('education (√)')
         self.main_form.typeBox.addItem('gifts (🎁)')
         self.main_form.typeBox.addItem('products (🍲)')
-        self.main_form.typeBox.addItem('No type')
+        self.main_form.typeBox.addItem('No type (⊘)')
 
         self.main_form.submit_button.clicked.connect(self.pushMoney)
+
+        self.main_form.balance_table.horizontalHeader().setVisible(False)
 
         current_date = QDate.currentDate()
         self.main_form.dateEdit.setDate(current_date)
@@ -207,6 +214,7 @@ class SafeMoneyApp(QMainWindow):
         self.drawDiagram()
         current_date = QDate.currentDate()
         self.main_form.dateEdit.setDate(current_date)
+        self.fillTable()
         conn.close()
 
     def pushMoney(self):
@@ -219,12 +227,11 @@ class SafeMoneyApp(QMainWindow):
 
         money = int(self.main_form.money_lineEdit.text())
         operation = self.main_form.operation_box.currentText()[:-4]
-        type = self.main_form.typeBox.currentText()[:-4]
+        type = self.main_form.typeBox.currentText()
         comment = self.main_form.comment_textEdit.toPlainText()
         if not comment:
             comment = '[No comment]'
         date = self.main_form.dateEdit.date().toString("yyyy-MM-dd")
-        print(money, operation, type, comment, date)
         cursor.execute('INSERT INTO operations (userid, money, operation, type, comment, date) VALUES '
                        '(?, ?, ?, ?, ?, ?)', (self.userid, money, operation, type, comment, date))
         self.balance = self.balance + (money * (-1, 1)[int(operation == "income")])
@@ -234,9 +241,43 @@ class SafeMoneyApp(QMainWindow):
         self.initMainWindow()
         self.main_form.tabWidget.setCurrentIndex(0)
 
+    def changePeriod(self):
+        self.period = self.sender().text()
+        self.fillTable()
 
     def fillTable(self):
-        pass
+        conn = sqlite3.connect('moneyBase.db')
+        cursor = conn.cursor()
+        if self.period == 'Today':
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                              'WHERE userid = ? AND date = ? ORDER BY date DESC',
+                                  (self.userid, QDate.currentDate().toString("yyyy-MM-dd"))).fetchall()
+        elif self.period == "Month":
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? AND strftime("%m", date) = ? AND strftime("%Y", date) = ? '
+                                  'ORDER BY date DESC',
+                                  (self.userid, str(QDate.currentDate().month()).zfill(2), str(QDate.currentDate().year()))).fetchall()
+        elif self.period == "Year":
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? AND strftime("%Y", date) = ? ORDER BY date DESC',
+                                  (self.userid, str(QDate.currentDate().year()))).fetchall()
+        else:
+            data = cursor.execute('SELECT money, operation, type, comment, date FROM operations '
+                                  'WHERE userid = ? ORDER BY date DESC',
+                                  (self.userid,)).fetchall()
+        formatData = []
+        for op in data:
+            formatData.append((('-', '+')[op[1] == 'income'] + str(op[0]), op[2][-2:-1], op[3], op[4]))
+
+        self.main_form.balance_table.setRowCount(0)
+
+        for row_num, row_data in enumerate(formatData):
+            self.main_form.balance_table.insertRow(row_num)
+            for col_num, cell_data in enumerate(row_data):
+                self.main_form.balance_table.setItem(row_num, col_num, QTableWidgetItem(str(cell_data)))
+                self.main_form.balance_table.resizeColumnToContents(col_num)
+
+        conn.close()
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ class Ui_SafeMoney(QMainWindow):
         self.line.setObjectName("line")
         self.balance_table = QtWidgets.QTableWidget(self.Main)
         self.balance_table.setGeometry(QtCore.QRect(9, 340, 318, 157))
-        self.balance_table.setColumnCount(3)
+        self.balance_table.setColumnCount(4)
         self.balance_table.setObjectName("balance_table")
         self.balance_table.setRowCount(0)
         self.layoutWidget = QtWidgets.QWidget(self.Main)
